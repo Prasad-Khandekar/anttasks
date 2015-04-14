@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE project>
+<!--
+ * All targets having their name starting with and underscore are INTERNAL targets. Please do not specify these names directly on
+ * the command line while building. Doing so may result in an error and will abort the build.
+-->
+<project name="Ant Tasks" basedir=".">
+	<!-- User Customised Properties -->
+	<property file="${basedir}/build-tools/build.properties"/>
+	<property file="${user.home}/build.properties"/>
+
+	<!-- Defaults -->
+	<property name="library.name" value="anttasks"/>
+	<property name="library.version" value="1.0"/>
+	<property name="library.title" value="Jasypt ant tasks"/>
+	<property name="build.home" value="${basedir}/build"/>
+	<property name="dist.home" value="${basedir}/dist"/>
+	<property name="src.home" value="${basedir}/src"/>
+	<property name="dist.home" value="${build.home}/meta"/>
+	<property name="compile.home" value="${build.home}/classes"/>
+	<property name="meta.home" value="${build.home}/meta"/>
+	<property name="maven.home" value="F:\\MAVENREPO"/>
+
+	<!-- Default Compilation Control Options -->
+	<property name="compile.debug" value="true"/>
+	<property name="compile.optimize" value="true"/>
+	<property name="compile.deprecation" value="false"/>
+	<property name="compile.target" value="1.5"/>
+	<property name="compile.source" value="1.5"/>
+	
+
+	<!-- Compilation Classpath -->
+	<path id="compile.classpath">
+		<fileset dir="${basedir}/lib"/>
+		<pathelement location="${maven.home}/org/apache/ant/ant/1.9.4/ant-1.9.4.jar"/>
+	</path>
+
+	<target name="_genBuildNo">
+		<propertyfile file="${basedir}/buildno.properties">
+			<entry key="build.number" operation="+" type="int" default="0"/>
+		</propertyfile>
+	</target>
+	<target name="_readBuildNo">
+		<property file="${basedir}/buildno.properties"/>
+	</target>
+
+	<target name="_genManifest" depends="_readBuildNo">
+		<mkdir dir="${meta.home}"/>
+		<manifest file="${meta.home}/MANIFEST.MF">
+			<attribute name="Built-By" value="Prasad P. Khandekar"/>
+			<attribute name="Built-On" value="${TS_TODAY}"/>
+			<attribute name="Build-Number" value="${build.number}"/>
+			<section name="common">
+				<attribute name="Specification-Title" value="${library.title}"/>
+				<attribute name="Specification-Version" value="${library.version}.${build.number}"/>
+			    <attribute name="Specification-Vendor" value="Bizsutra Systems Pvt. Ltd."/>
+			</section>
+		</manifest>
+	</target>
+
+	<target name="_clib">
+		<mkdir dir="${compile.home}"/>
+		<javac destdir="${compile.home}" classpathref="compile.classpath"
+			source="${compile.source}" target="${compile.target}" debug="${compile.debug}"
+			optimize="${compile.optimize}" deprecation="${compile.deprecation}"
+			verbose="${compile.verbose}">
+			<src path="${src.home}"/>
+		</javac>
+	</target>
+
+	<target name="_jar" depends="_clib, _genManifest"
+		description="Creates the runtime distribution for core jar">
+		<mkdir dir="${dist.home}"/>
+		<jar destfile="${dist.home}/${library.name}-${library.version}.${build.number}.jar"
+			manifest="${meta.home}/MANIFEST.MF" basedir="${compile.home}">
+			<fileset dir="${src.home}">
+				<include name="**/*.properties"/>
+			</fileset>
+		</jar>
+		<jar destfile="${dist.home}/${library.name}-${library.version}.${build.number}-sources.jar"
+			manifest="${meta.home}/MANIFEST.MF">
+			<fileset dir="${src.home}"/>
+		</jar>
+	</target>
+
+	<target name="init" description="Initialize the build">
+		<mkdir dir="${build.home}"/>
+		<delete dir="${compile.home}"/>
+		<delete dir="${meta.home}"/>
+		<tstamp>
+			<format property="TS_TODAY" pattern="MMMM dd, yyyy hh:mm:ss"/>
+		</tstamp>
+	</target>
+
+	<target name="dist" depends="init, _genBuildNo, _jar"
+		description="Creates the runtime distribution for core jar"/>
+</project>
